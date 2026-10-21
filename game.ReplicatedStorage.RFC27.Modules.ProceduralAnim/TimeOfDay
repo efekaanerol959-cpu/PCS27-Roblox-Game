@@ -1,0 +1,170 @@
+-- TimeOfDay: picks Day, Sunset or Night at random when a server starts.
+local Lighting = game:GetService("Lighting")
+
+local PRESETS = {
+	{
+		name = "Day",
+		clockTime = 14.5,
+		brightness = 2.6,
+		exposure = 0.3,
+		ambient = Color3.fromRGB(70, 75, 85),
+		outdoor = Color3.fromRGB(125, 130, 140),
+		shadowSoftness = 0.35,
+		atmos = { density = 0.30, offset = 0.20, color = Color3.fromRGB(200, 210, 225), decay = Color3.fromRGB(95, 105, 125), glare = 0.2, haze = 1.2 },
+		sunColor = Color3.fromRGB(255, 250, 240),
+	},
+	{
+		name = "Sunset",
+		clockTime = 17.2,
+		brightness = 2.3,
+		exposure = 0.25,
+		ambient = Color3.fromRGB(130, 72, 45),
+		outdoor = Color3.fromRGB(215, 115, 60),
+		shadowSoftness = 0.6,
+		atmos = { density = 0.36, offset = 0.10, color = Color3.fromRGB(255, 145, 65), decay = Color3.fromRGB(160, 70, 55), glare = 0.85, haze = 1.7 },
+		sunColor = Color3.fromRGB(255, 140, 60),
+	},
+	{
+		name = "Night",
+		clockTime = 0.5,
+		brightness = 1.1,
+		exposure = 0.0,
+		ambient = Color3.fromRGB(58, 66, 92),
+		outdoor = Color3.fromRGB(70, 82, 115),
+		shadowSoftness = 0.2,
+		atmos = { density = 0.04, offset = 0.10, color = Color3.fromRGB(60, 75, 115), decay = Color3.fromRGB(30, 38, 58), glare = 0, haze = 0.1 },
+		sunColor = Color3.fromRGB(150, 175, 255),
+	},
+}
+
+local preset = PRESETS[math.random(1, #PRESETS)]
+local isNight = preset.name == "Night"
+local isSunset = preset.name == "Sunset"
+
+Lighting.ClockTime = preset.clockTime
+Lighting.Brightness = preset.brightness
+Lighting.ExposureCompensation = preset.exposure
+Lighting.Ambient = preset.ambient
+Lighting.OutdoorAmbient = preset.outdoor
+Lighting.ShadowSoftness = preset.shadowSoftness
+Lighting.GlobalShadows = true
+
+local atmos = Lighting:FindFirstChildOfClass("Atmosphere")
+if not atmos then
+	atmos = Instance.new("Atmosphere")
+	atmos.Parent = Lighting
+end
+atmos.Density = preset.atmos.density
+atmos.Offset = preset.atmos.offset
+atmos.Color = preset.atmos.color
+atmos.Decay = preset.atmos.decay
+atmos.Glare = preset.atmos.glare
+atmos.Haze = preset.atmos.haze
+
+local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+if not cc then
+	cc = Instance.new("ColorCorrectionEffect")
+	cc.Parent = Lighting
+end
+if preset.name == "Night" then
+	cc.TintColor = Color3.fromRGB(175, 195, 240)
+	cc.Saturation = -0.15
+	cc.Contrast = 0.06
+	cc.Brightness = -0.09
+elseif preset.name == "Sunset" then
+	cc.TintColor = Color3.fromRGB(255, 225, 200)
+	cc.Saturation = 0.28
+	cc.Contrast = 0.18
+	cc.Brightness = 0.04
+else
+	cc.TintColor = Color3.fromRGB(255, 250, 245)
+	cc.Saturation = 0.15
+	cc.Contrast = 0.14
+	cc.Brightness = 0.02
+end
+
+local rays = Lighting:FindFirstChildOfClass("SunRaysEffect")
+if not rays then
+	rays = Instance.new("SunRaysEffect")
+	rays.Parent = Lighting
+end
+if isSunset then
+	rays.Intensity = 0.4
+	rays.Spread = 1
+elseif isNight then
+	rays.Intensity = 0
+else
+	rays.Intensity = 0.12
+	rays.Spread = 0.6
+end
+
+local oldProps = workspace:FindFirstChild("RFC27_SkyProps")
+if oldProps then oldProps:Destroy() end
+
+local sky = Lighting:FindFirstChildOfClass("Sky")
+if not sky then
+	sky = Instance.new("Sky")
+	sky.Parent = Lighting
+end
+sky.CelestialBodiesShown = true
+sky.StarCount = (preset.name == "Day") and 0 or 3000
+sky.MoonAngularSize = 14
+sky.SunAngularSize = isSunset and 18 or 12
+
+local stadium = workspace:FindFirstChild("RFC27_Stadium")
+local oldPitch = stadium and stadium:FindFirstChild("PitchLights")
+if oldPitch then oldPitch:Destroy() end
+local pitchLights = nil
+if stadium then
+	pitchLights = Instance.new("Folder")
+	pitchLights.Name = "PitchLights"
+	pitchLights.Parent = stadium
+	for xi = 0, 8 do
+		local x = -160 + xi * 40
+		for zi = 0, 4 do
+			local z = -96 + zi * 48
+			local rig = Instance.new("Part")
+			rig.Name = "PitchLight"
+			rig.Size = Vector3.new(2, 2, 2)
+			rig.Position = Vector3.new(x, 42, z)
+			rig.Anchored = true
+			rig.CanCollide = false
+			rig.CanQuery = false
+			rig.CanTouch = false
+			rig.CastShadow = false
+			rig.Transparency = 1
+			rig.Parent = pitchLights
+			local sl = Instance.new("SpotLight")
+			sl.Brightness = 1.6
+			sl.Range = 120
+			sl.Angle = 110
+			sl.Face = Enum.NormalId.Bottom
+			sl.Color = Color3.fromRGB(255, 250, 235)
+			sl.Shadows = false
+			sl.Enabled = isNight
+			sl.Parent = rig
+		end
+	end
+end
+
+local floodlights = stadium and stadium:FindFirstChild("Floodlights")
+if floodlights then
+	for _, head in ipairs(floodlights:GetChildren()) do
+		if head:IsA("BasePart") and head.Name:match("^Head") then
+			head.CFrame = CFrame.lookAt(head.Position, Vector3.new(0, 0, 0))
+			head.Transparency = isNight and 0 or 0.15
+		end
+		for _, pl in ipairs(head:GetChildren()) do
+			if pl:IsA("PointLight") then
+				pl.Brightness = isNight and 2.2 or 1.2
+				pl.Range = 60
+			end
+		end
+	end
+end
+
+print("[RFC27] Time of day: " .. preset.name)
+
+game.ReplicatedStorage:SetAttribute("TimeOfDay", preset.name)
+
+return "TimeOfDay set to " .. preset.name
