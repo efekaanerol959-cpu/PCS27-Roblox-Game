@@ -1,0 +1,21 @@
+local ProceduralAnim = require(ReplicatedStorage.RFC27.Modules.ProceduralAnim)
+
+-- Local character rig uses AnimationConstraint joints that tracks do NOT drive, and
+-- the client Animator resets Transform every frame. Detach it and drive procedurally.
+-- Server-side writes do NOT reach this client, so the swing MUST run here.
+local kickBusy = false
+local function localKick(kind)
+	if kickBusy then return end
+	local char = player.Character
+	if not char then return end
+	local joints = ProceduralAnim.GetJoints(char)
+	if not (joints and joints.RightHip) then return end
+	kickBusy = true
+	task.spawn(function()
+		local ok, err = pcall(function()
+			if kind == "shot" then ProceduralAnim.Kick(char) else ProceduralAnim.Pass(char) end
+		end)
+		kickBusy = false
+		if not ok then warn("localKick failed: "..tostring(err)) end
+	end)
+end
