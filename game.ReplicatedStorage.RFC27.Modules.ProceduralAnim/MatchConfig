@@ -1,0 +1,43 @@
+MatchConfig.Formats = {
+	quick = {
+		name = "Quick Match",
+		teamSize = 5,
+		halfLengthSeconds = 180,
+		halfs = 2,
+		difficulty = "pro",
+		spawnGoalkeeper = true,
+		goalkeeperSide = "both",
+	},
+	local1v1 = { name = "Local 1v1", teamSize = 1, halfLengthSeconds = 120, halfs = 2, difficulty = "pro" },
+	tutorial = {
+		name = "Tutorial",
+		homeAICount = 1,
+		awayAICount = 0,
+		teamSize = 1,
+		halfLengthSeconds = 600,
+		halfs = 1,
+		difficulty = "easy",
+		spawnGoalkeeper = true,
+		goalkeeperSide = "away",
+		aggressiveAI = true,
+	},
+	season = {
+		name = "Season",
+		teamSize = 5,
+		halfLengthSeconds = 240,
+		halfs = 2,
+		difficulty = "legendary",
+		spawnGoalkeeper = true,
+		goalkeeperSide = "both",
+	},
+}
+
+MatchConfig.Ball = {
+	radius = 1.15,
+	mass = 0.75,
+	elasticity = 0.82,
+	friction = 0.12,
+	drag = 0.012,      -- raised from 0.004 so shots decelerate
+	maxSpeed = 300,    -- lowered from 340
+	maxSpin = 90,
+}
